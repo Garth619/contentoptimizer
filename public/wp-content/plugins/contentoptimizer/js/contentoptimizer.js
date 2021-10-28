@@ -4,6 +4,8 @@
   $(document).ready(function () {
     //console.log(contentoptimizer_globals.is_gutenberg);
 
+    //#
+
     $("body").addClass("contentoptimizer-enabled");
 
     function contopOverlay(title, description) {
