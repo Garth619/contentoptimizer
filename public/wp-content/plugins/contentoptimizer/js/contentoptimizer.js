@@ -1,14 +1,22 @@
 (function ($) {
   "use strict";
 
+  /**
+   * some trashy demo jquery to get started. This will be redone later once we can get workflow and designs figured out with classes and better templating
+   */
+
   $(document).ready(function () {
     //console.log(contentoptimizer_globals.is_gutenberg);
 
-    //#
-
     $("body").addClass("contentoptimizer-enabled");
 
-    function contopOverlay(title, description) {
+    /**
+     * an overlay that houses the reports list - just for demo purposes
+     * @param {string} title does nothing yet - id like to use template literals
+     * @param {string} description does nothing yet - id like to use template literals
+     * contentoptimizer_globals.plugin_dir is php variable to get plugin directory
+     */
+    function overlay(title, description) {
       $("body").append(
         `<div class='contop-overlay'>
           <div class='contop-overlay-inner'>
@@ -33,55 +41,91 @@
           </div>
         </div>`
       );
+      /**
+       * click function that fires overlayView()
+       */
       $("span.contop-close").on("click", function (e) {
-        contopoverlayView("close");
+        overlayView("close");
       });
+      /**
+       * for clicking outside overlay to close it
+       * @type {string}
+       */
       var overlay = document.getElementsByClassName("contop-overlay")[0];
+      /**
+       * for clicking outside overlay to close it
+       * @type {string}
+       */
       var overlayinner = document.getElementsByClassName(
         "contop-overlay-inner"
       )[0];
-
+      /**
+       * click outside overlay to close it
+       */
       overlayinner.addEventListener("click", function (e) {
         e.stopPropagation();
       });
-
+      /**
+       * click outside overlay to close it
+       */
       overlay.addEventListener("click", function () {
-        contopoverlayView("close");
+        overlayView("close");
       });
     }
 
-    contopOverlay();
+    overlay();
 
-    function contopoverlayView(view) {
+    /**
+     * opens and closes the overlay
+     * @param {string} view open | close options
+     */
+    function overlayView(view) {
       if (view == "open") {
         $(".contop-overlay").addClass("contop-open");
+        // freezes html page
         $("html,body").css("overflow-y", "hidden");
       }
       if (view == "close") {
         $(".contop-overlay").removeClass("contop-open");
+        // unfreezes html page
         $("html,body").css("overflow-y", "scroll");
+        // clears out the reports list ajax call on close
         $("ul.contop-list").empty();
       }
     }
-
-    function contopShowmodule(module) {
+    /**
+     * hides all overlay modules and shows the current one based on css class
+     * @param {string} module class of overlay module to be shown
+     */
+    function showModule(module) {
       $(".contop-module").hide();
       $(module).show();
     }
-
+    /**
+     * report button in the wordpress admin sidebar
+     */
     $("#contop-get-reports-btn").on("click", function (e) {
+      // disable default button click
       e.preventDefault();
-      contopoverlayView("open");
-      contopShowmodule("#contop-reports-list");
-      contopajaxResults("reportsfeed");
+      // open overlay
+      overlayView("open");
+      // show overlay module that shows list of reports
+      showModule("#contop-reports-list");
+      // ajax list of reports
+      ajaxResults("reportsfeed");
+      // if the user has the text/html tab on in the wordpress text editor, toggle to the visual tab. Inserting reports into the text/html tab is buggy. this tab isnt tinymce and it doesnt work inserting reports there, then toggling back and forth
       if (!$("#wp-content-wrap").hasClass("tmce-active")) {
         $("#content-tmce").click();
       }
     });
-
-    function contopReportlist(data) {
+    /**
+     * ajax response that returns reports and appends to the overlay
+     * @param {json} data ajax variable response containing json objects
+     */
+    function reportList(data) {
       const dataParses = JSON.parse(data.body);
       console.log(dataParses);
+      // create list of reports. report id and report title included
       var appendText = [];
       for (const dataParse of dataParses) {
         appendText.push(
@@ -92,132 +136,136 @@
             "</li>"
         );
       }
+      // append reports to ul.contop-list
       appendText = appendText.join(" ");
       $("ul.contop-list").append(appendText);
-
-      $(".report-list-item").on("click", contopClickreport); // pull out and make event listener
-
-      function contopClickreport() {
+      /**
+       * when li.report-list-item is clicked, run clickReport()
+       */
+      $(".report-list-item").on("click", clickReport); // pull out and make event listener
+      /**
+       * collect the single report id
+       * find single report id's report body
+       * run addReport()
+       */
+      function clickReport() {
         var reportid = $(this).data("reportid");
         var reporttitle = $(this).text();
         var reportbody = dataParses.find((o) => o.id === reportid);
-        contopAddreportwindow(reportid, reporttitle, reportbody.body);
+        addReport(reportid, reporttitle, reportbody.body);
       }
     }
-
-    function contopAddreportwindow(reportid, reporttitle, reportbody) {
-      contopShowmodule("#contop-add-report");
+    /**
+     * shows "add report?" module with options for the user to take
+     * @param {string} reportid single report id
+     * @param {string} reporttitle single report title
+     * @param {string} reportbody single report body
+     */
+    function addReport(reportid, reporttitle, reportbody) {
+      // shows "add report?" module
+      showModule("#contop-add-report");
       console.log(reporttitle);
+      // empty overlay subtitle and add currently selected report title
       $(".contop-subtitle span").empty().append(reporttitle);
+      // "add report?" button click
       $("#contop-add-report-btn").on("click", function (e) {
-        contopoverlayView("close");
-        contopAddcontent(reportid, reportbody);
+        // close overlay
+        overlayView("close");
+        // run addtoEditor() which inserts the report selected into the tinymce visual tab
+        addtoEditor(reportid, reportbody); // also problems when loading up reports and losing overly.....inside and outside? just  add the title and returnn array of updated variables, dont add thee other functions until the button is actually clicked
       });
+      // go back to the reports list
       $("#contop-goback").on("click", function (e) {
-        contopShowmodule("#contop-reports-list");
+        // hide "add report?" module and show reports lists
+        showModule("#contop-reports-list");
       });
     }
-
-    // function contopAddreportwindow(reportid, reporttitle, reportbody) {
-    //   contopShowmodule("#contop-add-report");
-    //   console.log(reporttitle);
-    //   $(".contop-subtitle span").empty().append(reporttitle);
-    //   // $("#contop-add-report-btn").on("click", function (e) {
-    //   //   contopoverlayView("close");
-    //   //   contopAddcontent(reportid, reportbody);
-    //   // });
-    //   // $("#contop-goback").on("click", function (e) {
-    //   //   contopShowmodule("#contop-reports-list");
-    //   // });
-    // }
-
-    // $("#contop-add-report-btn").on("click", function (e) {
-    //   contopoverlayView("close");
-    //   contopAddcontent(1, "reportbody"); // also problems when loading up reports and losing overly.....inside and outside? just  add the title and returnn array of updated variables, dont add thee other functions until the button is actually clicked
-    // });
-    // $("#contop-goback").on("click", function (e) {
-    //   contopShowmodule("#contop-reports-list");
-    // });
-
-    function contopSinglereport(data) {
-      const dataParse = JSON.parse(data.body);
-      console.log(dataParse);
-    }
-
-    // tinymce practice
-
-    // tinyMCE.init({
-    //   selector: "textarea",
-    //   //mode: "specific_textareas",
-    //   //editor_selector: "wp-editor-area",
-    //   init_instance_callback: function (editor) {
-    //     // timeout after typing stops
-    //     let timeout = null;
-    //     editor.on("keyup", function (e) {
-    //       clearTimeout(timeout);
-    //       timeout = setTimeout(function () {
-    //         console.log("Element changed:", e.target.nodeName);
-    //         contopajaxResults(1); // needs to initate only after a report has been added
-    //       }, 500);
-    //     });
-    //   },
-    // });
-    function contopAddcontent(reportid, reportbody) {
+    /**
+     * inserts the selected single report into the tinymce visual tab
+     * runs ajax request of word count etc when going from text/html tab to visual tab
+     * runs typingResults() - ajax request of word count etc when user is done typing
+     * @param {string} reportid single report id
+     * @param {string} reportbody single report body
+     */
+    function addtoEditor(reportid, reportbody) {
       // var myContent = tinymce.get("myTextarea").getContent({ format: "text" });
       // var myContent = tinymce.get("myTextarea").getContent({ format: "raw" });
-      $("#content-tmce").on("click", function (e) {
-        //$("#content-tmce")
-        console.log("tt to vt");
-        contopajaxResults(reportid);
-      });
+
+      // inserts the selected single report into the tinymce visual tab
       if ($("#wp-content-wrap").hasClass("tmce-active")) {
-        // replace if with visual tab vars
         tinyMCE.get("content").setContent(reportbody);
         console.log("visual tab - " + reportid + reportbody);
-        contopajaxResults(reportid);
+        // run ajax request of word count etc once the report is added in
+        ajaxResults(reportid);
       } else {
+        // text/html tab isnt working
         // $("textarea#content").empty();
         // $("textarea#content").append(reportbody); // this isnt overriding existing text
         // console.log("text tab - " + reportid + reportbody);
         // might need to have it just work on visual tab
       }
-      contopTyping(reportid);
+      $("#content-tmce").on("click", function (e) {
+        // runs ajax request of word count etc when going from text/html tab to visual tab
+        ajaxResults(reportid);
+      });
+      // runs typingResults() - ajax request of word count etc when user is done typing
+      typingResults(reportid);
     }
-
-    function contopTyping(reportid) {
+    /**
+     * ajax request of word count etc when user is done typing
+     * @param {string} reportid single report id
+     */
+    function typingResults(reportid) {
       if ($("#wp-content-wrap").hasClass("tmce-active")) {
-        // timeout after typing stops
         let timeout = null;
         tinyMCE.get("content").on("keyup", function (e) {
           clearTimeout(timeout);
           timeout = setTimeout(function () {
             console.log("Element changed:", e.target.nodeName);
-            contopajaxResults(reportid);
+            ajaxResults(reportid);
           }, 500);
         });
       } else {
       }
     }
-
-    function contopajaxResults(dataId) {
+    /**
+     * get single report body text from json object
+     * @param {json} data ajax response json object
+     */
+    function singleReport(data) {
+      const dataParse = JSON.parse(data.body);
+      console.log(dataParse);
+    }
+    /**
+     * ajax request that gets json data from rest api endpoint
+     * @param {string} dataId ID that gets inserted in contentoptimizer-ajax.php
+     * dataId gets added to the content optimizer api url to get the proper report
+     * if dataId == reportsfeed then get the content optimizer api url of all reports
+     */
+    function ajaxResults(dataId) {
       $.ajax({
         type: "POST",
         dataType: "json",
         url: "/wp-json/v1/content-optimizer",
         data: { dataId },
+        // show loading gif
         beforeSend: function () {
           $(".contop-load").show();
         },
+        // hide loading gif
         complete: function (data) {
           $(".contop-load").hide();
         },
       })
         .done(function (response) {
           //console.log(response);
+
+          // if dataId == reportsfeed then get the content optimizer api url of all reports
+          // otherwise dataId gets added to the content optimizer api url to get the proper single report
           if (dataId == "reportsfeed") {
-            contopReportlist(response);
+            reportList(response);
           } else {
-            contopSinglereport(response);
+            singleReport(response);
           }
         })
         .fail(function (xhr, status, error) {
