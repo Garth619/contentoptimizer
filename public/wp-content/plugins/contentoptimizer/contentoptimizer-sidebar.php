@@ -73,7 +73,7 @@ class Content_Optimizer_Sidebar
 <div id="contop-get-reports" class="contop-box">
   <div id="status"></div>
   <p>Add a Report</p>
-  <button id="contop-get-reports-btn">Get Reports</button>
+  <div id="contop-get-reports-btn">Get Reports</div>
 </div>
 <?php
 }

@@ -251,6 +251,7 @@
           // if dataId == reportsfeed then get the content optimizer api url of all reports
           // otherwise dataId gets added to the content optimizer api url to get the proper single report
           if (dataId == "reportsfeed") {
+            // list of functions that need reports feed, is there a way to store this response variable once?
             reportList(response);
           } else {
             singleReport(response);
