@@ -124,7 +124,7 @@
      */
     function reportList(data) {
       const dataParses = JSON.parse(data.body);
-      console.log(dataParses);
+      //console.log(dataParses);
       // create list of reports. report id and report title included
       var appendText = [];
       for (const dataParse of dataParses) {
@@ -173,7 +173,7 @@
       if ($("#wp-content-wrap").hasClass("tmce-active")) {
         tinyMCE.get("content").setContent(reportbody);
 
-        console.log(reportid + " " + reportbody);
+        //console.log(reportid + " " + reportbody);
         // run ajax request of word count etc once the report is added in
         ajaxResults(reportid); // i wonder if this will be fixed data at first that comes along with report
       } else {
@@ -211,7 +211,7 @@
         tinyMCE.get("content").on("keyup", function (e) {
           clearTimeout(timeout);
           timeout = setTimeout(function () {
-            console.log("Element changed:", e.target.nodeName);
+            //console.log("Element changed:", e.target.nodeName);
             ajaxResults(reportid);
           }, 500);
         });
