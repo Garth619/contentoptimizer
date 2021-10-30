@@ -129,9 +129,7 @@
       var appendText = [];
       for (const dataParse of dataParses) {
         appendText.push(
-          "<li class='report-list-item' data-reportbody='" + // body too much data? then maybe we can get this id and ajax to the single report endpoint when clicking "add report button"
-            dataParse.body +
-            "' data-reportid='" +
+          "<li class='report-list-item' data-reportid='" +
             dataParse.id +
             "'>" +
             dataParse.title +
@@ -141,66 +139,95 @@
       // append reports to ul.contop-list
       appendText = appendText.join(" ");
       $("ul.contop-list").append(appendText);
+      /**
+       * when li.report-list-item is clicked, run clickReport()
+       */
+      $(".report-list-item").on("click", clickReport); // pull out and make event listener instead or when clicking this, have go back become cleared out, these functions get loaded over and over with each function having an ajax request tied to it
+
+      /**
+       * collect the single report id
+       * find single report id's report body
+       * run addReport()
+       */
+      function clickReport() {
+        var reportid = $(this).data("reportid");
+        var reporttitle = $(this).text();
+        var reportbody = dataParses.find((o) => o.id === reportid);
+
+        //return [reportid, reporttitle, reportbody];
+
+        // closure pull out these variables
+
+        addReport(reportid, reporttitle, reportbody.body); // i might need to remove this and use closure
+      }
     }
     /**
-     * when li.report-list-item is clicked, grab that choice's data attr
-     * insert them to the "add report" button data attr
-     * then show "add report?" module
+     * shows "add report?" module with options for the user to take
+     * @param {string} reportid single report id
+     * @param {string} reporttitle single report title
+     * @param {string} reportbody single report body
      */
-    $("ul.contop-list").on("click", ".report-list-item", function (e) {
-      // get data attr
-      const reportid = $(this).data("reportid");
-      const reportbody = $(this).data("reportbody");
-      const reporttitle = $(this).text();
-      // insert on the "add report" button
-      $("#contop-add-report-btn").attr("data-reportid", reportid);
-      $("#contop-add-report-btn").attr("data-reportbody", reportbody);
-      $(".contop-subtitle span").empty().append(reporttitle);
-      // show "add report?" module
+    function addReport(reportid, reporttitle, reportbody) {
+      // shows "add report?" module
       showModule("#contop-add-report");
-    });
+      console.log(reporttitle);
+      // empty overlay subtitle and add currently selected report title
+      $(".contop-subtitle span").empty().append(reporttitle);
 
+      // take this out of addReport and listen for it maybe?
+
+      // "add report?" button click
+      $("#contop-add-report-btn").on("click", function (e) {
+        // close overlay
+        overlayView("close");
+        // run addtoEditor() which inserts the report selected into the tinymce visual tab
+        addtoEditor(reportid, reportbody); // also problems when loading up reports and losing overly.....inside and outside? just  add the title and returnn array of updated variables, dont add thee other functions until the button is actually clicked
+      });
+
+      // take this out of addReport and listen for it maybe?
+
+      // go back to the reports list
+      $("#contop-goback").on("click", function (e) {
+        // hide "add report?" module and show reports lists
+        showModule("#contop-reports-list");
+      });
+    }
     /**
-     * "add report?" button click
-     * insert "add report?" button data attr into the tinymce visual tab
-     * run ajax request of word count etc once the report is added in
+     * inserts the selected single report into the tinymce visual tab
+     * runs ajax request of word count etc when going from text/html tab to visual tab
+     * runs typingResults() - ajax request of word count etc when user is done typing
+     * @param {string} reportid single report id
+     * @param {string} reportbody single report body
      */
-    $("#contop-add-report-btn").on("click", function (e) {
-      // get "add report?" button data attr
-      const reportid = $(this).attr("data-reportid");
-      const reportbody = $(this).attr("data-reportbody");
-      // insert "add report?" button data attr into the tinymce visual tab
+    function addtoEditor(reportid, reportbody) {
+      // var myContent = tinymce.get("myTextarea").getContent({ format: "text" });
+      // var myContent = tinymce.get("myTextarea").getContent({ format: "raw" });
+
+      // inserts the selected single report into the tinymce visual tab
       if ($("#wp-content-wrap").hasClass("tmce-active")) {
         tinyMCE.get("content").setContent(reportbody);
-
-        console.log(reportid + " " + reportbody);
+        console.log("visual tab - " + reportid + reportbody);
         // run ajax request of word count etc once the report is added in
-        ajaxResults(reportid); // i wonder if this will be fixed data at first that comes along with report
+        ajaxResults(reportid);
       } else {
         // text/html tab isnt working
-        //
         // $("textarea#content").empty();
         // $("textarea#content").append(reportbody); // this isnt overriding existing text
         // console.log("text tab - " + reportid + reportbody);
         // might need to have it just work on visual tab
       }
+
+      // why are these in addtoeditor??
+
       $("#content-tmce").on("click", function (e) {
         // runs ajax request of word count etc when going from text/html tab to visual tab
         ajaxResults(reportid);
       });
+
+      // why are these in addtoeditor??
       // runs typingResults() - ajax request of word count etc when user is done typing
       typingResults(reportid);
-      // close overlay
-      overlayView("close");
-    });
-
-    /**
-     * go back to the reports list
-     */
-    $("#contop-goback").on("click", function (e) {
-      // hide "add report?" module and show reports lists
-      showModule("#contop-reports-list");
-    });
+    }
     /**
      * ajax request of word count etc when user is done typing
      * @param {string} reportid single report id
@@ -219,7 +246,7 @@
       }
     }
     /**
-     * get single report body text from json object if needed (incomplete)
+     * get single report body text from json object
      * @param {json} data ajax response json object
      */
     function singleReport(data) {
@@ -248,6 +275,8 @@
         },
       })
         .done(function (response) {
+          //console.log(response);
+
           // if dataId == reportsfeed then get the content optimizer api url of all reports
           // otherwise dataId gets added to the content optimizer api url to get the proper single report
           if (dataId == "reportsfeed") {
